@@ -55,14 +55,7 @@ def analyze():
     if request.method == 'POST':
         return redirect(url_for('index'))
     
-    # Get demo race for testing
-    demo_race = Race.query.first()
-    demo_horses = []
-    
-    if demo_race:
-        demo_horses = Horse.query.filter_by(race_id=demo_race.id).all()
-    
-    return render_template('analyze.html', demo_race=demo_race, demo_horses=demo_horses)
+    return render_template('analyze.html')
 
 
 @app.route('/calculator')
