@@ -206,21 +206,20 @@ function analyzeRace() {
     };
     
     // Prepare horses data
-    const horses = [
-        {% for horse in demo_horses %}
-        {
-            name: '{{ horse.name }}',
-            barrier: {{ horse.barrier }},
-            odds_decimal: {{ horse.odds_decimal }},
-            last3_form: '{{ horse.last3_form }}',
-            jockey: '{{ horse.jockey }}',
-            trainer: '{{ horse.trainer }}',
-            speed_map_hint: '{{ horse.speed_map_hint }}',
-            market_open_odds: {{ horse.market_open_odds or 'null' }},
-            market_current_odds: {{ horse.market_current_odds or 'null' }}
-        }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
+    const horses = [];
+    {% for horse in demo_horses %}
+    horses.push({
+        name: '{{ horse.name }}',
+        barrier: {{ horse.barrier }},
+        odds_decimal: {{ horse.odds_decimal }},
+        last3_form: '{{ horse.last3_form }}',
+        jockey: '{{ horse.jockey }}',
+        trainer: '{{ horse.trainer }}',
+        speed_map_hint: '{{ horse.speed_map_hint }}',
+        market_open_odds: {{ horse.market_open_odds or 'null' }},
+        market_current_odds: {{ horse.market_current_odds or 'null' }}
+    });
+    {% endfor %}
     
     // Call API
     fetch('/api/analyze', {
