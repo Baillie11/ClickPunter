@@ -54,7 +54,7 @@ Or upload CSV with columns: name,barrier,odds,last3_form,jockey,trainer,speed_ma
             <tr>
                 <td>{{ horse.barrier }}</td>
                 <td><strong>{{ horse.name }}</strong></td>
-                <td>${{ "%.2f"|format(horse.odds_decimal) }}</td>
+                <td>${{ "%.2f"|format(horse.odds_decimal or 0) }}</td>
                 <td>{{ horse.last3_form }}</td>
                 <td>{{ horse.jockey }}</td>
                 <td>{{ horse.trainer }}</td>
