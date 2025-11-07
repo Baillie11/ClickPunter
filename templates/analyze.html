@@ -18,22 +18,6 @@
 
 Or upload CSV with columns: name,barrier,odds,last3_form,jockey,trainer,speed_map_hint"></textarea>
     
-    <div style="margin-top: 15px;">
-        <label style="font-weight: bold;">Race Details (optional):</label>
-        <div class="race-details-inputs">
-            <input type="text" id="meeting" placeholder="Meeting (e.g., Flemington)">
-            <input type="text" id="track-condition" placeholder="Track Condition (e.g., GOOD)">
-        </div>
-    </div>
-    
-    <style>
-        .race-details-inputs { display: flex; gap: 2%; }
-        .race-details-inputs input { flex: 1; }
-        @media (max-width: 768px) {
-            .race-details-inputs { flex-direction: column; gap: 10px; }
-        }
-    </style>
-    
     <button class="btn" onclick="analyzeCustomRace()" style="margin-top: 15px;">🔍 Analyse This Race</button>
     
     <div id="custom-analysis-result" style="margin-top: 20px;"></div>
@@ -90,8 +74,8 @@ Or upload CSV with columns: name,barrier,odds,last3_form,jockey,trainer,speed_ma
 <script>
 function analyzeCustomRace() {
     const raceText = document.getElementById('race-text').value.trim();
-    const meeting = document.getElementById('meeting').value.trim() || 'Custom Race';
-    const trackCondition = document.getElementById('track-condition').value.trim() || 'GOOD';
+    const meeting = 'Custom Race';
+    const trackCondition = 'GOOD';
     
     if (!raceText) {
         alert('Please paste race data');
