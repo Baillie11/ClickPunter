@@ -4,7 +4,8 @@ Run this in PythonAnywhere Bash console from your app directory.
 """
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
+import pytz
 
 # Set DATABASE_URL if not already set (for PythonAnywhere)
 if 'DATABASE_URL' not in os.environ:
@@ -41,12 +42,14 @@ def update_race_dates():
             confirm = input("\nUpdate these race dates to today? (yes/no): ")
             
             if confirm.lower() in ['yes', 'y']:
-                today = date.today()
+                # Use Australian Eastern timezone
+                au_tz = pytz.timezone('Australia/Melbourne')
+                today = datetime.now(au_tz).date()
                 for race in races:
                     race.date = today
                 
                 db.session.commit()
-                print(f"\n✅ Updated {len(races)} race(s) to {today.strftime('%d/%m/%Y')}")
+                print(f"\n✅ Updated {len(races)} race(s) to {today.strftime('%d/%m/%Y')} (Australian time)")
             else:
                 print("Update cancelled.")
         except Exception as e:
