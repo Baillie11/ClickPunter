@@ -6,18 +6,6 @@
     <p>Calculate your boxed trifecta and quinella bets using preset or custom strategies.</p>
     
     <div style="margin-top: 30px;">
-        <h3>Race Details (Optional)</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-            <div class="form-group">
-                <label>Track:</label>
-                <input type="text" id="race-track" placeholder="e.g., Flemington">
-            </div>
-            <div class="form-group">
-                <label>Race Number:</label>
-                <input type="number" id="race-number" placeholder="e.g., 7" min="1" max="20">
-            </div>
-        </div>
-        
         <h3>Enter Your Selections</h3>
         <div class="form-group">
             <label>Horse A (Anchor):</label>
@@ -206,16 +194,12 @@ function displayCalculation(data, strategy) {
     const b = document.getElementById('horse-b').value.trim();
     const c = document.getElementById('horse-c').value.trim();
     
-    // Also capture race details
-    const raceTrack = document.getElementById('race-track').value.trim();
-    const raceNumber = document.getElementById('race-number').value;
-    
     window.lastCalculation = {
         horse_a: a,
         horse_b: b,
         horse_c: c,
-        race_track: raceTrack || 'Unknown',
-        race_number: raceNumber ? parseInt(raceNumber) : 0,
+        race_track: '',
+        race_number: 0,
         strategy_type: data.strategy_type || strategy,
         stake_total: data.total_stake,
         breakdown: data.bets,
@@ -252,8 +236,8 @@ function saveBet() {
     .then(data => {
         if (data.success) {
             alert('✅ Bet saved to history!');
-            // Optionally redirect to history
-            // window.location.href = '/history';
+            // Redirect back to analyse page
+            window.location.href = '/analyze';
         } else {
             alert('Error saving bet: ' + (data.error || 'Unknown error'));
         }
