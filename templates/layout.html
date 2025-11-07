@@ -32,6 +32,27 @@
         input, textarea, select { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 100%; margin: 5px 0; }
         label { display: block; margin-top: 10px; font-weight: bold; }
         .form-group { margin: 15px 0; }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            header h1 { font-size: 1.5rem; }
+            header p { font-size: 0.9rem; }
+            nav ul { flex-direction: column; gap: 5px; }
+            nav a { padding: 10px; }
+            .card { padding: 15px; margin: 15px 0; }
+            table { font-size: 0.85rem; }
+            th, td { padding: 8px 4px; }
+            input, textarea, select { font-size: 16px; } /* Prevents zoom on iOS */
+            .btn { width: 100%; padding: 12px; margin: 5px 0; }
+        }
+        
+        @media (max-width: 480px) {
+            header h1 { font-size: 1.3rem; }
+            header { padding: 15px 0; }
+            table { font-size: 0.75rem; display: block; overflow-x: auto; }
+            .card { padding: 10px; }
+        }
     </style>
 </head>
 <body>

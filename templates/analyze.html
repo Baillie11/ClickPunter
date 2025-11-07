@@ -20,9 +20,19 @@ Or upload CSV with columns: name,barrier,odds,last3_form,jockey,trainer,speed_ma
     
     <div style="margin-top: 15px;">
         <label style="font-weight: bold;">Race Details (optional):</label>
-        <input type="text" id="meeting" placeholder="Meeting (e.g., Flemington)" style="width: 48%; display: inline-block; margin-right: 2%;">
-        <input type="text" id="track-condition" placeholder="Track Condition (e.g., GOOD)" style="width: 48%; display: inline-block;">
+        <div class="race-details-inputs">
+            <input type="text" id="meeting" placeholder="Meeting (e.g., Flemington)">
+            <input type="text" id="track-condition" placeholder="Track Condition (e.g., GOOD)">
+        </div>
     </div>
+    
+    <style>
+        .race-details-inputs { display: flex; gap: 2%; }
+        .race-details-inputs input { flex: 1; }
+        @media (max-width: 768px) {
+            .race-details-inputs { flex-direction: column; gap: 10px; }
+        }
+    </style>
     
     <button class="btn" onclick="analyzeCustomRace()" style="margin-top: 15px;">🔍 Analyze This Race</button>
     
