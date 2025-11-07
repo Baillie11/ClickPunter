@@ -285,6 +285,30 @@ def api_update_bet_result(bet_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/delete-bet/<int:bet_id>', methods=['DELETE', 'POST'])
+@login_required
+def api_delete_bet(bet_id):
+    """Delete a bet (user can only delete their own bets)."""
+    try:
+        # Get bet and verify ownership
+        bet = Bet.query.get(bet_id)
+        if not bet:
+            return jsonify({'success': False, 'error': 'Bet not found'}), 404
+        
+        if bet.user_id != current_user.id:
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        
+        # Delete the bet
+        db.session.delete(bet)
+        db.session.commit()
+        
+        return jsonify({'success': True}), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/save-bet', methods=['POST'])
 @login_required
 def api_save_bet():

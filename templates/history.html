@@ -87,10 +87,16 @@ Stake: ${{ '%.2f'|format(bet.stake_total) }}
                     </button>
                     {% if bet.result_status == 'pending' %}
                     <button onclick="enterResults({{ bet.id }}, '{{ bet.horse_a.name }}', '{{ bet.horse_b.name }}', '{{ bet.horse_c.name }}')" 
-                            class="btn" style="padding: 6px 12px; font-size: 0.9em; background: #28a745;">
+                            class="btn" style="padding: 6px 12px; font-size: 0.9em; background: #28a745; margin-right: 5px;">
                         📝 Results
                     </button>
                     {% endif %}
+                    <button onclick="deleteBet({{ bet.id }})" 
+                            class="btn delete-bet-btn" 
+                            data-bet-id="{{ bet.id }}"
+                            style="padding: 6px 12px; font-size: 0.9em; background: #dc3545;">
+                        🗑️ Delete
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -282,6 +288,49 @@ function submitResults() {
                     ${message}
                     <br><br><button class="btn" onclick="location.reload()">Refresh Page</button>
                 </div>`;
+        }
+    });
+}
+
+function deleteBet(betId) {
+    if (!confirm('Are you sure you want to delete this bet?')) {
+        return;
+    }
+    
+    // Find the button and disable it
+    const button = document.querySelector(`button[data-bet-id="${betId}"]`);
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '⏳ Deleting...';
+    }
+    
+    fetch(`/api/delete-bet/${betId}`, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the table row
+            const row = document.getElementById(`bet-row-${betId}`);
+            if (row) {
+                row.remove();
+            }
+        } else {
+            alert('Error deleting bet: ' + (data.error || 'Unknown error'));
+            // Re-enable button on error
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '🗑️ Delete';
+            }
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+        // Re-enable button on error
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '🗑️ Delete';
         }
     });
 }
