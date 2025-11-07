@@ -23,7 +23,7 @@
         <tbody>
             {% for bet in bets %}
             <tr id="bet-row-{{ bet.id }}">
-                <td>{{ bet.created_at.strftime('%d/%m/%Y') }}</td>
+                <td>{{ bet.race.date.strftime('%d/%m/%Y') }}</td>
                 <td id="race-display-{{ bet.id }}">
                     {% if bet.race.track and bet.race.track not in ['Calculator', 'Unknown', 'Manual Entry', ''] %}
                     <strong>{{ bet.race.track }}</strong>
@@ -105,8 +105,8 @@ Stake: ${{ '%.2f'|format(bet.stake_total) }}
 </div>
 {% else %}
 <div class="card">
-    <p>No bets saved yet. Start by analyzing a race and saving your selections!</p>
-    <a href="/analyze" class="btn">Analyze Races</a>
+    <p>No bets saved yet. Start by analysing a race and saving your selections!</p>
+    <a href="/analyze" class="btn">Analyse Races</a>
 </div>
 {% endif %}
 
