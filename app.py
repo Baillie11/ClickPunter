@@ -316,6 +316,16 @@ def api_save_bet():
         # Get race details from request
         race_track = data.get('race_track', '').strip()
         race_number = data.get('race_number', 0)
+        race_date_str = data.get('race_date', '')
+        
+        # Parse race date or use today
+        try:
+            if race_date_str:
+                race_date = datetime.strptime(race_date_str, '%Y-%m-%d').date()
+            else:
+                race_date = date.today()
+        except:
+            race_date = date.today()
         
         # Use empty string if no track provided
         if not race_track:
@@ -328,7 +338,7 @@ def api_save_bet():
         race = Race(
             meeting=race_track or "Manual Entry",
             track=race_track or "",
-            date=date.today(),
+            date=race_date,
             race_name=race_name,
             race_number=race_number if race_number else 0,
             source="calculator"

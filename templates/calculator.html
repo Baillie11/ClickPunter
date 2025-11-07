@@ -6,6 +6,36 @@
     <p>Calculate your boxed trifecta and quinella bets using preset or custom strategies.</p>
     
     <div style="margin-top: 30px;">
+        <h3>Race Details</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;">
+            <div class="form-group">
+                <label>Track:</label>
+                <select id="race-track">
+                    <option value="">Select Track</option>
+                    <option value="Flemington">Flemington</option>
+                    <option value="Randwick">Randwick</option>
+                    <option value="Caulfield">Caulfield</option>
+                    <option value="Rosehill">Rosehill</option>
+                    <option value="Moonee Valley">Moonee Valley</option>
+                    <option value="Doomben">Doomben</option>
+                    <option value="Eagle Farm">Eagle Farm</option>
+                    <option value="Morphettville">Morphettville</option>
+                    <option value="Ascot">Ascot</option>
+                    <option value="Canterbury">Canterbury</option>
+                    <option value="Sandown">Sandown</option>
+                    <option value="Warwick Farm">Warwick Farm</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Race Number:</label>
+                <input type="number" id="race-number" placeholder="e.g., 7" min="1" max="20">
+            </div>
+            <div class="form-group">
+                <label>Race Date:</label>
+                <input type="date" id="race-date">
+            </div>
+        </div>
+        
         <h3>Enter Your Selections</h3>
         <div class="form-group">
             <label>Horse A (Anchor):</label>
@@ -50,6 +80,10 @@
 <script>
 // Pre-fill form from URL parameters if present
 window.addEventListener('DOMContentLoaded', function() {
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('race-date').value = today;
+    
     const urlParams = new URLSearchParams(window.location.search);
     const horseA = urlParams.get('a');
     const horseB = urlParams.get('b');
@@ -194,12 +228,18 @@ function displayCalculation(data, strategy) {
     const b = document.getElementById('horse-b').value.trim();
     const c = document.getElementById('horse-c').value.trim();
     
+    // Capture race details
+    const raceTrack = document.getElementById('race-track').value;
+    const raceNumber = parseInt(document.getElementById('race-number').value) || 0;
+    const raceDate = document.getElementById('race-date').value;
+    
     window.lastCalculation = {
         horse_a: a,
         horse_b: b,
         horse_c: c,
-        race_track: '',
-        race_number: 0,
+        race_track: raceTrack,
+        race_number: raceNumber,
+        race_date: raceDate,
         strategy_type: data.strategy_type || strategy,
         stake_total: data.total_stake,
         breakdown: data.bets,
@@ -220,6 +260,7 @@ function saveBet() {
         horse_c_name: window.lastCalculation.horse_c,
         race_track: window.lastCalculation.race_track,
         race_number: window.lastCalculation.race_number,
+        race_date: window.lastCalculation.race_date,
         strategy_type: window.lastCalculation.strategy_type,
         stake_total: window.lastCalculation.stake_total,
         breakdown: window.lastCalculation.breakdown,
