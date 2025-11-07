@@ -1,0 +1,266 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Betting Calculator</h2>
+    <p>Calculate your boxed trifecta and quinella bets using preset or custom strategies.</p>
+    
+    <div style="margin-top: 30px;">
+        <h3>Race Details (Optional)</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label>Track:</label>
+                <input type="text" id="race-track" placeholder="e.g., Flemington">
+            </div>
+            <div class="form-group">
+                <label>Race Number:</label>
+                <input type="number" id="race-number" placeholder="e.g., 7" min="1" max="20">
+            </div>
+        </div>
+        
+        <h3>Enter Your Selections</h3>
+        <div class="form-group">
+            <label>Horse A (Anchor):</label>
+            <input type="text" id="horse-a" placeholder="e.g., Lightning Fast">
+            <label style="font-size: 0.9em; font-weight: normal; margin-top: 5px;">Odds (optional):</label>
+            <input type="number" id="odds-a" placeholder="e.g., 3.50" step="0.01" min="1" style="max-width: 150px;">
+        </div>
+        <div class="form-group">
+            <label>Horse B (Pace):</label>
+            <input type="text" id="horse-b" placeholder="e.g., Steady Runner">
+            <label style="font-size: 0.9em; font-weight: normal; margin-top: 5px;">Odds (optional):</label>
+            <input type="number" id="odds-b" placeholder="e.g., 7.00" step="0.01" min="1" style="max-width: 150px;">
+        </div>
+        <div class="form-group">
+            <label>Horse C (Value):</label>
+            <input type="text" id="horse-c" placeholder="e.g., Value Bet">
+            <label style="font-size: 0.9em; font-weight: normal; margin-top: 5px;">Odds (optional):</label>
+            <input type="number" id="odds-c" placeholder="e.g., 12.00" step="0.01" min="1" style="max-width: 150px;">
+        </div>
+        
+        <h3 style="margin-top: 30px;">Select Strategy</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+            <button class="btn" onclick="calculate('budget_5')">$5 Strategy</button>
+            <button class="btn" onclick="calculate('budget_6')">$6 Strategy</button>
+            <button class="btn" onclick="calculate('budget_10')">$10 Strategy</button>
+            <button class="btn" onclick="calculate('budget_15')">$15 Strategy</button>
+            <button class="btn" onclick="calculate('trifecta_only')" style="background: #6c757d;">Trifecta Only</button>
+            <button class="btn" onclick="calculate('quinella_only')" style="background: #6c757d;">Quinella Only</button>
+            <button class="btn btn-secondary" onclick="showCustom()">Custom Budget</button>
+        </div>
+        
+        <div id="custom-budget" style="display: none; margin-top: 20px;">
+            <label>Custom Budget ($):</label>
+            <input type="number" id="custom-amount" min="1" step="0.5" value="10">
+            <button class="btn" onclick="calculate('custom')" style="margin-top: 10px;">Calculate Custom</button>
+        </div>
+        
+        <div id="results" style="margin-top: 30px;"></div>
+    </div>
+</div>
+
+<script>
+// Pre-fill form from URL parameters if present
+window.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const horseA = urlParams.get('a');
+    const horseB = urlParams.get('b');
+    const horseC = urlParams.get('c');
+    const oddsA = urlParams.get('oa');
+    const oddsB = urlParams.get('ob');
+    const oddsC = urlParams.get('oc');
+    
+    if (horseA) document.getElementById('horse-a').value = horseA;
+    if (horseB) document.getElementById('horse-b').value = horseB;
+    if (horseC) document.getElementById('horse-c').value = horseC;
+    if (oddsA) document.getElementById('odds-a').value = oddsA;
+    if (oddsB) document.getElementById('odds-b').value = oddsB;
+    if (oddsC) document.getElementById('odds-c').value = oddsC;
+    
+    // Show a helpful message if pre-filled
+    if (horseA && horseB && horseC) {
+        const message = document.createElement('div');
+        message.style.cssText = 'background: #d4edda; color: #155724; padding: 15px; margin: 20px 0; border-radius: 8px; border: 1px solid #c3e6cb;';
+        let messageText = '✅ <strong>Selections loaded from analysis:</strong> ' + horseA + ', ' + horseB + ', ' + horseC;
+        if (oddsA && oddsB && oddsC) {
+            messageText += '<br><em>Odds also loaded - click a strategy to see estimated returns!</em>';
+        }
+        message.innerHTML = messageText;
+        document.querySelector('.card').insertBefore(message, document.querySelector('.card h2').nextSibling);
+    }
+});
+
+function showCustom() {
+    document.getElementById('custom-budget').style.display = 'block';
+}
+
+function calculate(strategy) {
+    const a = document.getElementById('horse-a').value.trim();
+    const b = document.getElementById('horse-b').value.trim();
+    const c = document.getElementById('horse-c').value.trim();
+    
+    if (!a || !b || !c) {
+        alert('Please enter all three horse selections (A, B, C)');
+        return;
+    }
+    
+    const selections = { A: a, B: b, C: c };
+    let budget = null;
+    
+    if (strategy === 'custom') {
+        budget = parseFloat(document.getElementById('custom-amount').value);
+    }
+    
+    // Get odds if provided
+    const odds = {};
+    const oddsA = parseFloat(document.getElementById('odds-a').value);
+    const oddsB = parseFloat(document.getElementById('odds-b').value);
+    const oddsC = parseFloat(document.getElementById('odds-c').value);
+    
+    if (oddsA) odds.A = oddsA;
+    if (oddsB) odds.B = oddsB;
+    if (oddsC) odds.C = oddsC;
+    
+    fetch('/api/calc', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            selections: selections,
+            strategy_type: strategy,
+            budget: budget,
+            odds: odds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        displayCalculation(data, strategy);
+    })
+    .catch(error => {
+        document.getElementById('results').innerHTML = '<p style="color: red;">Error: ' + error + '</p>';
+    });
+}
+
+function displayCalculation(data, strategy) {
+    const resultsDiv = document.getElementById('results');
+    
+    if (data.error) {
+        resultsDiv.innerHTML = '<div class="card" style="background: #f8d7da;"><p><strong>Error:</strong> ' + data.error + '</p></div>';
+        return;
+    }
+    
+    let html = '<div class="card" style="background: #f9f9f9;">';
+    html += '<h3>Bet Breakdown</h3>';
+    html += '<p><strong>Strategy:</strong> ' + data.strategy + '</p>';
+    html += '<p><strong>Selections:</strong> ' + data.selections.join(', ') + '</p>';
+    html += '<hr style="margin: 20px 0;">';
+    
+    data.bets.forEach(bet => {
+        html += '<div style="margin: 15px 0;">';
+        html += '<h4>' + bet.type + '</h4>';
+        html += '<p>Combinations: ' + bet.num_combos + '</p>';
+        html += '<p>Unit: $' + bet.unit.toFixed(2) + '</p>';
+        html += '<p>Stake: $' + bet.stake.toFixed(2) + '</p>';
+        if (bet.flexi_pct < 1.0) {
+            html += '<p>Flexi: ' + (bet.flexi_pct * 100).toFixed(1) + '%</p>';
+        }
+        html += '</div>';
+    });
+    
+    html += '<hr style="margin: 20px 0;">';
+    html += '<h3>Total Stake: $' + data.total_stake.toFixed(2) + '</h3>';
+    
+    // Show estimated returns if odds were provided
+    if (data.estimated_dividends && data.estimated_returns) {
+        html += '<hr style="margin: 20px 0;">';
+        html += '<div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-top: 20px;">';
+        html += '<h3 style="color: #0066cc;">💰 Estimated Returns</h3>';
+        html += '<p style="font-size: 0.9em; color: #666; margin-bottom: 10px;"><em>Based on Racing.com fixed odds (20% takeout estimate)</em></p>';
+        html += '<p><strong>Trifecta dividend:</strong> $' + data.estimated_dividends.trifecta.toFixed(2) + ' per $1</p>';
+        html += '<p><strong>Quinella dividend:</strong> $' + data.estimated_dividends.quinella.toFixed(2) + ' per $1</p>';
+        html += '<hr style="margin: 15px 0; border-color: #ccc;">';
+        html += '<p><strong>Your trifecta return:</strong> $' + data.estimated_returns.trifecta_return.toFixed(2) + '</p>';
+        html += '<p><strong>Your quinella return:</strong> $' + data.estimated_returns.quinella_return.toFixed(2) + '</p>';
+        html += '<h4 style="color: #0066cc; margin-top: 10px;">Total Return: $' + data.estimated_returns.total_return.toFixed(2) + '</h4>';
+        
+        const profit = data.estimated_returns.total_return - data.total_stake;
+        const profitColor = profit >= 0 ? '#155724' : '#721c24';
+        const profitBg = profit >= 0 ? '#d4edda' : '#f8d7da';
+        html += '<p style="background: ' + profitBg + '; color: ' + profitColor + '; padding: 10px; border-radius: 4px; margin-top: 10px;">';
+        html += '<strong>Profit/Loss:</strong> $' + profit.toFixed(2);
+        html += '</p>';
+        html += '</div>';
+    }
+    
+    {% if current_user.is_authenticated %}
+    html += '<button class="btn" onclick="saveBet()" style="margin-top: 20px;">💾 Save to History</button>';
+    {% else %}
+    html += '<p style="margin-top: 20px; color: #666;"><em>💡 <a href="/login">Login</a> to save bets to your history</em></p>';
+    {% endif %}
+    
+    html += '</div>';
+    
+    resultsDiv.innerHTML = html;
+    
+    // Store calculation result for saving
+    const a = document.getElementById('horse-a').value.trim();
+    const b = document.getElementById('horse-b').value.trim();
+    const c = document.getElementById('horse-c').value.trim();
+    
+    // Also capture race details
+    const raceTrack = document.getElementById('race-track').value.trim();
+    const raceNumber = document.getElementById('race-number').value;
+    
+    window.lastCalculation = {
+        horse_a: a,
+        horse_b: b,
+        horse_c: c,
+        race_track: raceTrack || 'Unknown',
+        race_number: raceNumber ? parseInt(raceNumber) : 0,
+        strategy_type: data.strategy_type || strategy,
+        stake_total: data.total_stake,
+        breakdown: data.bets,
+        estimated_dividends: data.estimated_dividends,
+        estimated_returns: data.estimated_returns
+    };
+}
+
+function saveBet() {
+    if (!window.lastCalculation) {
+        alert('No calculation to save. Please calculate a bet first.');
+        return;
+    }
+    
+    const betData = {
+        horse_a_name: window.lastCalculation.horse_a,
+        horse_b_name: window.lastCalculation.horse_b,
+        horse_c_name: window.lastCalculation.horse_c,
+        race_track: window.lastCalculation.race_track,
+        race_number: window.lastCalculation.race_number,
+        strategy_type: window.lastCalculation.strategy_type,
+        stake_total: window.lastCalculation.stake_total,
+        breakdown: window.lastCalculation.breakdown,
+        estimated_dividends: window.lastCalculation.estimated_dividends,
+        estimated_returns: window.lastCalculation.estimated_returns
+    };
+    
+    fetch('/api/save-bet', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(betData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Bet saved to history!');
+            // Optionally redirect to history
+            // window.location.href = '/history';
+        } else {
+            alert('Error saving bet: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error saving bet: ' + error);
+    });
+}
+</script>
+{% endblock %}

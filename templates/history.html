@@ -1,0 +1,290 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Betting History</h2>
+    <p>Track your past bets and results.</p>
+</div>
+
+{% if bets %}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Race</th>
+                <th>Selections (A/B/C)</th>
+                <th>Strategy</th>
+                <th>Stake</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bet in bets %}
+            <tr id="bet-row-{{ bet.id }}">
+                <td>{{ bet.created_at.strftime('%d/%m/%Y') }}</td>
+                <td id="race-display-{{ bet.id }}">
+                    {% if bet.race.track and bet.race.track not in ['Calculator', 'Unknown', 'Manual Entry', ''] %}
+                    <strong>{{ bet.race.track }}</strong>
+                    {% if bet.race.race_number > 0 %}
+                    <br><small>Race {{ bet.race.race_number }}</small>
+                    {% endif %}
+                    {% else %}
+                    <em style="color: #999;">-</em>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge-a">A</span> {% if bet.horse_a %}{{ bet.horse_a.name }}{% endif %}<br>
+                    <span class="badge-b">B</span> {% if bet.horse_b %}{{ bet.horse_b.name }}{% endif %}<br>
+                    <span class="badge-c">C</span> {% if bet.horse_c %}{{ bet.horse_c.name }}{% endif %}
+                </td>
+                <td>
+                    <span title="{% if bet.strategy_type == 'budget_6' %}Trifecta Box $0.50 unit ($3) | Quinella Box $1.00 unit ($3){% elif bet.strategy_type == 'budget_5' %}Trifecta Box $2 Flexi 33% | Quinella Box $1.00 unit ($3){% elif bet.strategy_type == 'budget_10' %}Trifecta Box $1.00 unit ($6) | Quinella Box $1.33 unit ($4){% elif bet.strategy_type == 'budget_15' %}Trifecta Box $1.50 unit ($9) | Quinella Box $2.00 unit ($6){% elif bet.strategy_type == 'trifecta_only' %}Trifecta Box $1.00 unit ($6){% elif bet.strategy_type == 'quinella_only' %}Quinella Box $2.00 unit ($6){% else %}{{ bet.strategy_type }}{% endif %}" 
+                          style="border-bottom: 1px dotted #666; cursor: help;">
+                        {{ bet.strategy_type.replace('_', ' ').title() }}
+                    </span>
+                </td>
+                <td>${{ "%.2f"|format(bet.stake_total) }}</td>
+                <td>
+                    {% if bet.result_status == 'won' %}
+                    <span style="padding: 4px 8px; background: #28a745; color: white; border-radius: 4px; font-weight: bold;">✅ Won</span>
+                    {% elif bet.result_status == 'partial' %}
+                    <span style="padding: 4px 8px; background: #17a2b8; color: white; border-radius: 4px; font-weight: bold;">↗️ Partial</span>
+                    {% elif bet.result_status == 'lost' %}
+                    <span style="padding: 4px 8px; background: #dc3545; color: white; border-radius: 4px; font-weight: bold;">❌ Lost</span>
+                    {% else %}
+                    {% if bet.est_total_return %}
+                    {% set profit = bet.est_total_return - bet.stake_total %}
+                    <span title="Estimated Payouts (20% takeout):
+🎯 Trifecta dividend: ${{ '%.2f'|format(bet.est_trifecta_dividend) }}/$ 1
+🎯 Quinella dividend: ${{ '%.2f'|format(bet.est_quinella_dividend) }}/$ 1
+
+Your Potential Returns:
+💰 Trifecta: ${{ '%.2f'|format(bet.est_trifecta_return) }}
+💰 Quinella: ${{ '%.2f'|format(bet.est_quinella_return) }}
+💵 Total Return: ${{ '%.2f'|format(bet.est_total_return) }}
+
+{% if profit >= 0 %}✅ Profit: ${{ '%.2f'|format(profit) }}{% else %}❌ Loss: ${{ '%.2f'|format(profit|abs) }}{% endif %}
+
+Stake: ${{ '%.2f'|format(bet.stake_total) }}
+(Based on Racing.com odds when saved)" 
+                          style="padding: 4px 8px; background: #ffc107; color: #000; border-radius: 4px; font-weight: bold; cursor: help; border-bottom: 2px dotted #000;">
+                        ⏳ Pending
+                    </span>
+                    {% else %}
+                    <span title="No odds available. Enter odds in calculator to see estimated payouts." 
+                          style="padding: 4px 8px; background: #ffc107; color: #000; border-radius: 4px; font-weight: bold; cursor: help; border-bottom: 2px dotted #000;">
+                        ⏳ Pending
+                    </span>
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td style="white-space: nowrap;">
+                    <button onclick="editRace({{ bet.id }}, '{{ bet.race.track }}', {{ bet.race.race_number }})" 
+                            class="btn" style="padding: 6px 12px; font-size: 0.9em; margin-right: 5px;">
+                        ✏️ Edit Race
+                    </button>
+                    {% if bet.result_status == 'pending' %}
+                    <button onclick="enterResults({{ bet.id }}, '{{ bet.horse_a.name }}', '{{ bet.horse_b.name }}', '{{ bet.horse_c.name }}')" 
+                            class="btn" style="padding: 6px 12px; font-size: 0.9em; background: #28a745;">
+                        📝 Results
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <p>No bets saved yet. Start by analyzing a race and saving your selections!</p>
+    <a href="/analyze" class="btn">Analyze Races</a>
+</div>
+{% endif %}
+
+<!-- Edit Race Modal -->
+<div id="edit-race-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3 style="margin-top: 0;">✏️ Edit Race Details</h3>
+        
+        <div class="form-group">
+            <label>Track:</label>
+            <input type="text" id="edit-track" placeholder="e.g., Flemington">
+        </div>
+        <div class="form-group">
+            <label>Race Number:</label>
+            <input type="number" id="edit-race-number" placeholder="e.g., 7" min="0" max="20">
+        </div>
+        
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn" onclick="saveRaceDetails()">✅ Save</button>
+            <button class="btn btn-secondary" onclick="closeEditRaceModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Results Entry Modal -->
+<div id="results-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h3 style="margin-top: 0;">📝 Enter Race Results</h3>
+        <p><strong>Your selections:</strong> <span id="modal-horses"></span></p>
+        
+        <div class="form-group">
+            <label>What were the actual finishing positions?</label>
+            <input type="text" id="result-1st" placeholder="1st place horse name">
+            <input type="text" id="result-2nd" placeholder="2nd place horse name" style="margin-top: 10px;">
+            <input type="text" id="result-3rd" placeholder="3rd place horse name" style="margin-top: 10px;">
+        </div>
+        
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn" onclick="submitResults()">Check Results</button>
+            <button class="btn btn-secondary" onclick="closeResultsModal()">Cancel</button>
+        </div>
+        
+        <div id="result-output" style="margin-top: 20px;"></div>
+    </div>
+</div>
+
+<script>
+let currentBetId = null;
+let currentHorses = {};
+let currentRaceId = null;
+
+function editRace(betId, currentTrack, currentRaceNumber) {
+    currentBetId = betId;
+    
+    // Handle empty/default values
+    if (!currentTrack || currentTrack === 'None' || currentTrack === 'Calculator' || currentTrack === 'Unknown' || currentTrack === 'Manual Entry') {
+        currentTrack = '';
+    }
+    if (!currentRaceNumber || currentRaceNumber === 0 || currentRaceNumber === '0') {
+        currentRaceNumber = '';
+    }
+    
+    document.getElementById('edit-track').value = currentTrack;
+    document.getElementById('edit-race-number').value = currentRaceNumber;
+    document.getElementById('edit-race-modal').style.display = 'block';
+}
+
+function closeEditRaceModal() {
+    document.getElementById('edit-race-modal').style.display = 'none';
+}
+
+function saveRaceDetails() {
+    const track = document.getElementById('edit-track').value.trim();
+    const raceNumber = parseInt(document.getElementById('edit-race-number').value) || 0;
+    
+    fetch(`/api/update-race-details/${currentBetId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            track: track,
+            race_number: raceNumber
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the display
+            const displayCell = document.getElementById(`race-display-${currentBetId}`);
+            if (track) {
+                displayCell.innerHTML = `<strong>${track}</strong>` + 
+                    (raceNumber > 0 ? `<br><small>Race ${raceNumber}</small>` : '');
+            } else {
+                displayCell.innerHTML = '<em style="color: #999;">-</em>';
+            }
+            closeEditRaceModal();
+        } else {
+            alert('Error updating race details: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+function enterResults(betId, horseA, horseB, horseC) {
+    currentBetId = betId;
+    currentHorses = { a: horseA, b: horseB, c: horseC };
+    
+    document.getElementById('modal-horses').textContent = `${horseA}, ${horseB}, ${horseC}`;
+    document.getElementById('results-modal').style.display = 'block';
+    document.getElementById('result-1st').value = '';
+    document.getElementById('result-2nd').value = '';
+    document.getElementById('result-3rd').value = '';
+    document.getElementById('result-output').innerHTML = '';
+}
+
+function closeResultsModal() {
+    document.getElementById('results-modal').style.display = 'none';
+}
+
+function submitResults() {
+    const first = document.getElementById('result-1st').value.trim();
+    const second = document.getElementById('result-2nd').value.trim();
+    const third = document.getElementById('result-3rd').value.trim();
+    
+    if (!first || !second || !third) {
+        alert('Please enter all three finishing positions');
+        return;
+    }
+    
+    // Check if our horses won
+    const ourHorses = [currentHorses.a.toLowerCase(), currentHorses.b.toLowerCase(), currentHorses.c.toLowerCase()];
+    const results = [first.toLowerCase(), second.toLowerCase(), third.toLowerCase()];
+    
+    // Trifecta: exact order
+    const trifectaWon = results[0] === ourHorses[0] && results[1] === ourHorses[1] && results[2] === ourHorses[2];
+    
+    // Quinella: any two in top 2
+    const top2 = [results[0], results[1]];
+    const quinellaMatches = ourHorses.filter(h => top2.includes(h)).length;
+    const quinellaWon = quinellaMatches === 2;
+    
+    // Any of our horses in top 3
+    const horsesInTop3 = ourHorses.filter(h => results.includes(h)).length;
+    
+    let status = 'lost';
+    let message = '';
+    
+    if (trifectaWon && quinellaWon) {
+        status = 'won';
+        message = '🎉 <strong>WINNER!</strong> Both Trifecta and Quinella won!';
+    } else if (quinellaWon) {
+        status = 'partial';
+        message = '✅ <strong>Quinella won!</strong> Trifecta missed.';
+    } else if (horsesInTop3 > 0) {
+        status = 'partial';
+        message = `↗️ <strong>Partial:</strong> ${horsesInTop3} of your horses in top 3, but no winning bets.`;
+    } else {
+        status = 'lost';
+        message = '❌ <strong>Lost:</strong> None of your horses in top 3.';
+    }
+    
+    // Save to backend
+    fetch(`/api/update-bet-result/${currentBetId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            result_status: status,
+            first: first,
+            second: second,
+            third: third
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('result-output').innerHTML = 
+                `<div style="background: ${status === 'won' ? '#d4edda' : status === 'partial' ? '#d1ecf1' : '#f8d7da'}; color: ${status === 'won' ? '#155724' : status === 'partial' ? '#0c5460' : '#721c24'}; padding: 15px; border-radius: 4px;">
+                    ${message}
+                    <br><br><button class="btn" onclick="location.reload()">Refresh Page</button>
+                </div>`;
+        }
+    });
+}
+</script>
+
+{% endblock %}

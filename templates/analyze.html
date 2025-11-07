@@ -1,0 +1,278 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Race Analysis</h2>
+    <p>Analyze races using the ABC Method to identify winning selections.</p>
+</div>
+
+<div class="card">
+    <h3>📝 Option 1: Paste Race Data</h3>
+    <p>Copy race information from Racing.com, TAB, or type it in this format:</p>
+    <p><code>1. Horse Name (Barrier) $Odds J:Jockey T:Trainer Form</code></p>
+    
+    <textarea id="race-text" rows="10" placeholder="Paste race data here, e.g.:
+1. Lightning Fast (2) $3.20 J:Smith T:Brown 114
+2. Steady Runner (5) $6.50 J:Jones T:White 232
+3. Value Bet (7) $11.00 J:Davis T:Green x15 up in trip
+
+Or upload CSV with columns: name,barrier,odds,last3_form,jockey,trainer,speed_map_hint"></textarea>
+    
+    <div style="margin-top: 15px;">
+        <label style="font-weight: bold;">Race Details (optional):</label>
+        <input type="text" id="meeting" placeholder="Meeting (e.g., Flemington)" style="width: 48%; display: inline-block; margin-right: 2%;">
+        <input type="text" id="track-condition" placeholder="Track Condition (e.g., GOOD)" style="width: 48%; display: inline-block;">
+    </div>
+    
+    <button class="btn" onclick="analyzeCustomRace()" style="margin-top: 15px;">🔍 Analyze This Race</button>
+    
+    <div id="custom-analysis-result" style="margin-top: 20px;"></div>
+</div>
+
+{% if demo_race %}
+<div class="card">
+    <h3>🎯 Option 2: Demo Race (For Testing)</h3>
+    <p><strong>{{ demo_race.meeting }} - {{ demo_race.race_name }}</strong></p>
+    <p><strong>Distance:</strong> {{ demo_race.distance_m }}m | <strong>Condition:</strong> {{ demo_race.track_condition }} | <strong>Runners:</strong> {{ demo_race.num_runners }}</p>
+    
+    {% if demo_horses %}
+    <h4 style="margin-top: 20px;">Runners:</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Barrier</th>
+                <th>Horse</th>
+                <th>Odds</th>
+                <th>Form</th>
+                <th>Jockey</th>
+                <th>Trainer</th>
+                <th>Map</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for horse in demo_horses %}
+            <tr>
+                <td>{{ horse.barrier }}</td>
+                <td><strong>{{ horse.name }}</strong></td>
+                <td>${{ "%.2f"|format(horse.odds_decimal) }}</td>
+                <td>{{ horse.last3_form }}</td>
+                <td>{{ horse.jockey }}</td>
+                <td>{{ horse.trainer }}</td>
+                <td>{{ horse.speed_map_hint }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 20px;">
+        <button class="btn" onclick="analyzeRace()">🔍 Run ABC Analysis</button>
+    </div>
+    
+    <div id="analysis-result" style="margin-top: 20px;"></div>
+    {% endif %}
+</div>
+{% else %}
+<div class="card">
+    <p><strong>No demo race available.</strong> Run <code>python init_app.py</code> and seed demo data to test the analyzer.</p>
+</div>
+{% endif %}
+
+<script>
+function analyzeCustomRace() {
+    const raceText = document.getElementById('race-text').value.trim();
+    const meeting = document.getElementById('meeting').value.trim() || 'Custom Race';
+    const trackCondition = document.getElementById('track-condition').value.trim() || 'GOOD';
+    
+    if (!raceText) {
+        alert('Please paste race data');
+        return;
+    }
+    
+    // Parse the race data
+    fetch('/api/parse', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'text=' + encodeURIComponent(raceText)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error parsing race data: ' + data.error);
+            return;
+        }
+        
+        const horses = data.horses;
+        
+        // Filter out any invalid horses
+        const validHorses = horses.filter(h => h.name && h.name.length > 0);
+        
+        const race = {
+            meeting: meeting,
+            track: meeting,
+            track_condition: trackCondition,
+            num_runners: validHorses.length
+        };
+        
+        // Now analyze it
+        return fetch('/api/analyze', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({race: race, horses: horses})
+        });
+    })
+    .then(response => response.json())
+    .then(analysisData => {
+        displayCustomResults(analysisData);
+    })
+    .catch(error => {
+        document.getElementById('custom-analysis-result').innerHTML = '<p style="color: red;">Error: ' + error + '</p>';
+    });
+}
+
+function displayCustomResults(data) {
+    const resultDiv = document.getElementById('custom-analysis-result');
+    
+    let html = '<div class="card" style="background: #e8f5e9;">';
+    html += '<h3>✅ ABC Selections</h3>';
+    
+    const candidates = data.candidates;
+    
+    if (candidates.A) {
+        html += '<div style="margin: 15px 0; padding: 15px; background: white; border-radius: 8px;">';
+        html += '<span class="badge-a">A - ANCHOR</span> <strong>' + candidates.A.horse.name + '</strong> ($' + candidates.A.horse.odds_decimal.toFixed(2) + ')';
+        html += '<br><small>Barrier: ' + candidates.A.horse.barrier + ' | ' + candidates.A.rationale + '</small></div>';
+    } else {
+        html += '<p style="color: orange;">⚠️ No suitable Anchor (A) found in odds range $2.80-$4.50</p>';
+    }
+    
+    if (candidates.B) {
+        html += '<div style="margin: 15px 0; padding: 15px; background: white; border-radius: 8px;">';
+        html += '<span class="badge-b">B - PACE</span> <strong>' + candidates.B.horse.name + '</strong> ($' + candidates.B.horse.odds_decimal.toFixed(2) + ')';
+        html += '<br><small>Barrier: ' + candidates.B.horse.barrier + ' | ' + candidates.B.rationale + '</small></div>';
+    } else {
+        html += '<p style="color: orange;">⚠️ No suitable Pace (B) found in odds range $5.00-$10.00</p>';
+    }
+    
+    if (candidates.C) {
+        html += '<div style="margin: 15px 0; padding: 15px; background: white; border-radius: 8px;">';
+        html += '<span class="badge-c">C - VALUE</span> <strong>' + candidates.C.horse.name + '</strong> ($' + candidates.C.horse.odds_decimal.toFixed(2) + ')';
+        html += '<br><small>Barrier: ' + candidates.C.horse.barrier + ' | ' + candidates.C.rationale + '</small></div>';
+    } else {
+        html += '<p style="color: orange;">⚠️ No suitable Value (C) found in odds range $8.00-$18.00</p>';
+    }
+    
+    // Checklist
+    html += '<h4 style="margin-top: 25px; border-top: 2px solid #ddd; padding-top: 15px;">📋 Quick Checklist</h4>';
+    html += '<ul style="list-style: none; padding: 0;">';
+    html += '<li style="padding: 8px; margin: 5px 0; background: white; border-radius: 4px;">' + (data.checklist.field_size_ok ? '✅' : '⚠️') + ' ' + data.checklist.field_size_message + '</li>';
+    html += '<li style="padding: 8px; margin: 5px 0; background: white; border-radius: 4px;">' + (data.checklist.barriers_ok ? '✅' : '⚠️') + ' Barriers: ' + data.checklist.barrier_notes.join(', ') + '</li>';
+    html += '<li style="padding: 8px; margin: 5px 0; background: white; border-radius: 4px;">🏁 Track Condition: ' + data.checklist.track_condition + '</li>';
+    if (data.checklist.market_firmers.length > 0) {
+        html += '<li style="padding: 8px; margin: 5px 0; background: white; border-radius: 4px;">✅ Market Firmers: ' + data.checklist.market_firmers.join(', ') + '</li>';
+    }
+    html += '</ul>';
+    
+    // Add calculator link with pre-filled data
+    if (candidates.A && candidates.B && candidates.C) {
+        const horseA = encodeURIComponent(candidates.A.horse.name);
+        const horseB = encodeURIComponent(candidates.B.horse.name);
+        const horseC = encodeURIComponent(candidates.C.horse.name);
+        const oddsA = candidates.A.horse.odds_decimal;
+        const oddsB = candidates.B.horse.odds_decimal;
+        const oddsC = candidates.C.horse.odds_decimal;
+        const calcUrl = `/calculator?a=${horseA}&b=${horseB}&c=${horseC}&oa=${oddsA}&ob=${oddsB}&oc=${oddsC}`;
+        
+        html += '<div style="margin-top: 25px; padding: 20px; background: #fff3cd; border-radius: 8px;">';
+        html += '<h4 style="margin: 0 0 10px 0;">💰 Ready to Calculate Your Bets?</h4>';
+        html += '<p style="margin: 0 0 15px 0;">Your selections: <strong>' + candidates.A.horse.name + '</strong>, <strong>' + candidates.B.horse.name + '</strong>, <strong>' + candidates.C.horse.name + '</strong></p>';
+        html += '<a href="' + calcUrl + '" class="btn">Go to Calculator →</a>';
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    
+    resultDiv.innerHTML = html;
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function analyzeRace() {
+    // Prepare race data
+    const race = {
+        meeting: '{{ demo_race.meeting }}',
+        track: '{{ demo_race.track }}',
+        distance_m: {{ demo_race.distance_m }},
+        track_condition: '{{ demo_race.track_condition }}',
+        num_runners: {{ demo_race.num_runners }}
+    };
+    
+    // Prepare horses data
+    const horses = [
+        {% for horse in demo_horses %}
+        {
+            name: '{{ horse.name }}',
+            barrier: {{ horse.barrier }},
+            odds_decimal: {{ horse.odds_decimal }},
+            last3_form: '{{ horse.last3_form }}',
+            jockey: '{{ horse.jockey }}',
+            trainer: '{{ horse.trainer }}',
+            speed_map_hint: '{{ horse.speed_map_hint }}',
+            market_open_odds: {{ horse.market_open_odds or 'null' }},
+            market_current_odds: {{ horse.market_current_odds or 'null' }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Call API
+    fetch('/api/analyze', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({race: race, horses: horses})
+    })
+    .then(response => response.json())
+    .then(data => {
+        displayResults(data);
+    })
+    .catch(error => {
+        document.getElementById('analysis-result').innerHTML = '<p style="color: red;">Error: ' + error + '</p>';
+    });
+}
+
+function displayResults(data) {
+    const resultDiv = document.getElementById('analysis-result');
+    
+    let html = '<div class="card" style="background: #f9f9f9;">';
+    html += '<h3>ABC Selections</h3>';
+    
+    // Display selections
+    const candidates = data.candidates;
+    
+    if (candidates.A) {
+        html += '<div style="margin: 15px 0;"><span class="badge-a">A</span> <strong>' + candidates.A.horse.name + '</strong> ($' + candidates.A.horse.odds_decimal.toFixed(2) + ')<br><small>' + candidates.A.rationale + '</small></div>';
+    }
+    
+    if (candidates.B) {
+        html += '<div style="margin: 15px 0;"><span class="badge-b">B</span> <strong>' + candidates.B.horse.name + '</strong> ($' + candidates.B.horse.odds_decimal.toFixed(2) + ')<br><small>' + candidates.B.rationale + '</small></div>';
+    }
+    
+    if (candidates.C) {
+        html += '<div style="margin: 15px 0;"><span class="badge-c">C</span> <strong>' + candidates.C.horse.name + '</strong> ($' + candidates.C.horse.odds_decimal.toFixed(2) + ')<br><small>' + candidates.C.rationale + '</small></div>';
+    }
+    
+    // Checklist
+    html += '<h4 style="margin-top: 20px;">Checklist</h4>';
+    html += '<ul>';
+    html += '<li>' + (data.checklist.field_size_ok ? '✅' : '⚠️') + ' ' + data.checklist.field_size_message + '</li>';
+    html += '<li>' + (data.checklist.barriers_ok ? '✅' : '⚠️') + ' Barriers: ' + data.checklist.barrier_notes.join(', ') + '</li>';
+    html += '<li>Track Condition: ' + data.checklist.track_condition + '</li>';
+    if (data.checklist.market_firmers.length > 0) {
+        html += '<li>✅ Market Firmers: ' + data.checklist.market_firmers.join(', ') + '</li>';
+    }
+    html += '</ul>';
+    
+    html += '<div style="margin-top: 20px;"><a href="/calculator" class="btn">💰 Go to Calculator</a></div>';
+    html += '</div>';
+    
+    resultDiv.innerHTML = html;
+}
+</script>
+{% endblock %}
