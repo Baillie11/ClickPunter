@@ -195,6 +195,7 @@ function displayCustomResults(data) {
     resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+{% if demo_race and demo_horses %}
 function analyzeRace() {
     // Prepare race data
     const race = {
@@ -273,5 +274,6 @@ function displayResults(data) {
     
     resultDiv.innerHTML = html;
 }
+{% endif %}
 </script>
 {% endblock %}
