@@ -23,10 +23,10 @@ from models.race import Race
 def update_race_dates():
     with app.app_context():
         try:
-            # Get all races with date 2025-11-07
-            races = Race.query.filter_by(date=date(2025, 11, 7)).all()
+            # Get all races (or filter by specific date if needed)
+            races = Race.query.all()
             
-            print(f"Found {len(races)} race(s) with date 07/11/2025")
+            print(f"Found {len(races)} race(s) in total")
             
             if not races:
                 print("No races found to update.")
