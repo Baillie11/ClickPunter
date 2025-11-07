@@ -46,8 +46,7 @@ def load_user(user_id):
 @app.route('/')
 def index():
     """Home page."""
-    recent_races = Race.query.order_by(Race.created_at.desc()).limit(5).all()
-    return render_template('index.html', recent_races=recent_races)
+    return render_template('index.html')
 
 
 @app.route('/analyze', methods=['GET', 'POST'])

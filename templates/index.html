@@ -44,37 +44,6 @@
     </div>
 </div>
 
-{% if recent_races %}
-<div class="card">
-    <h3>Recent Races</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Meeting</th>
-                <th>Race</th>
-                <th>Distance</th>
-                <th>Runners</th>
-                <th>Condition</th>
-                <th>Date</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for race in recent_races %}
-            <tr>
-                <td>{{ race.meeting }}</td>
-                <td>{{ race.race_name or 'Race ' + race.race_number|string }}</td>
-                <td>{{ race.distance_m }}m</td>
-                <td>{{ race.num_runners }}</td>
-                <td>{{ race.track_condition }}</td>
-                <td>{{ race.date }}</td>
-                <td><a href="/analyze?race_id={{ race.id }}" class="btn">Analyse</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% endif %}
 
 <div class="card">
     <h3>Quick Tips</h3>
