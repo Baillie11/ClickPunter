@@ -70,7 +70,7 @@ def history():
     """Betting history page."""
     bets = Bet.query.filter_by(user_id=current_user.id)\
         .join(Race)\
-        .order_by(Race.date.desc(), Race.race_number.asc(), Bet.created_at.desc())\
+        .order_by(Race.date.asc(), Race.track.asc(), Race.race_number.asc())\
         .all()
     return render_template('history.html', bets=bets)
 
