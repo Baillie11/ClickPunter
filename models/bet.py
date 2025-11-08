@@ -33,6 +33,9 @@ class Bet(db.Model):
     
     # Results
     result_status = db.Column(db.String(20), default='pending')  # "pending", "won", "lost", "partial"
+    result_first = db.Column(db.String(100), nullable=True)  # 1st place horse name
+    result_second = db.Column(db.String(100), nullable=True)  # 2nd place horse name
+    result_third = db.Column(db.String(100), nullable=True)  # 3rd place horse name
     actual_trifecta_dividend = db.Column(db.Float, nullable=True)
     actual_quinella_dividend = db.Column(db.Float, nullable=True)
     total_return = db.Column(db.Float, nullable=True)

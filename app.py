@@ -266,8 +266,11 @@ def api_update_bet_result(bet_id):
         if not bet or bet.user_id != current_user.id:
             return jsonify({'error': 'Bet not found'}), 404
         
-        # Update status
+        # Update status and results
         bet.result_status = data.get('result_status', 'lost')
+        bet.result_first = data.get('first', '').strip()
+        bet.result_second = data.get('second', '').strip()
+        bet.result_third = data.get('third', '').strip()
         bet.updated_at = datetime.now()
         
         db.session.commit()

@@ -33,6 +33,7 @@
                 <th>Date</th>
                 <th>Race</th>
                 <th>Selections (A/B/C)</th>
+                <th>Results</th>
                 <th>Strategy</th>
                 <th>Stake</th>
                 <th>Status</th>
@@ -57,6 +58,18 @@
                     <span class="badge-a">A</span> {% if bet.horse_a %}{{ bet.horse_a.name }}{% endif %}<br>
                     <span class="badge-b">B</span> {% if bet.horse_b %}{{ bet.horse_b.name }}{% endif %}<br>
                     <span class="badge-c">C</span> {% if bet.horse_c %}{{ bet.horse_c.name }}{% endif %}
+                </td>
+                <td id="results-display-{{ bet.id }}">
+                    {% if bet.result_status == 'pending' %}
+                    <em style="color: #999;">-</em>
+                    {% else %}
+                    {% if bet.result_first %}<strong>1st:</strong> {{ bet.result_first }}<br>{% endif %}
+                    {% if bet.result_second %}<strong>2nd:</strong> {{ bet.result_second }}<br>{% endif %}
+                    {% if bet.result_third %}<strong>3rd:</strong> {{ bet.result_third }}{% endif %}
+                    {% if not bet.result_first and not bet.result_second and not bet.result_third %}
+                    <em style="color: #999;">Not entered</em>
+                    {% endif %}
+                    {% endif %}
                 </td>
                 <td>
                     <span title="{% if bet.strategy_type == 'budget_6' %}Trifecta Box $0.50 unit ($3) | Quinella Box $1.00 unit ($3){% elif bet.strategy_type == 'budget_5' %}Trifecta Box $2 Flexi 33% | Quinella Box $1.00 unit ($3){% elif bet.strategy_type == 'budget_10' %}Trifecta Box $1.00 unit ($6) | Quinella Box $1.33 unit ($4){% elif bet.strategy_type == 'budget_15' %}Trifecta Box $1.50 unit ($9) | Quinella Box $2.00 unit ($6){% elif bet.strategy_type == 'trifecta_only' %}Trifecta Box $1.00 unit ($6){% elif bet.strategy_type == 'quinella_only' %}Quinella Box $2.00 unit ($6){% else %}{{ bet.strategy_type }}{% endif %}" 
