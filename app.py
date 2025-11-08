@@ -1,12 +1,13 @@
 """
 ClickPunter - Main Flask Application
 """
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_file
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from dotenv import load_dotenv
 import os
 from datetime import date, datetime
 import json
+from io import BytesIO
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +24,7 @@ from modules.race_analyzer import analyze_race
 from modules.bet_calculator import apply_strategy, estimate_returns, estimate_dividends_from_odds
 from modules.form_parser import parse_csv, parse_text, parse_upload
 from modules.api_connector import connector
+from modules.pdf_exporter import generate_betting_history_pdf
 
 # Create Flask app
 app = Flask(__name__)
@@ -299,6 +301,44 @@ def api_delete_bet(bet_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/export-history-pdf', methods=['GET'])
+@login_required
+def api_export_history_pdf():
+    """Export betting history as PDF."""
+    try:
+        # Get all bets for current user (same query as history page)
+        bets = Bet.query.filter_by(user_id=current_user.id)\
+            .join(Race)\
+            .order_by(Race.date.asc(), Race.track.asc(), Race.race_number.asc())\
+            .all()
+        
+        if not bets:
+            flash('No betting history to export', 'error')
+            return redirect(url_for('history'))
+        
+        # Generate PDF
+        pdf_data = generate_betting_history_pdf(bets, current_user.username)
+        
+        # Create BytesIO object and write PDF data
+        pdf_buffer = BytesIO(pdf_data)
+        pdf_buffer.seek(0)
+        
+        # Generate filename with timestamp
+        filename = f"ClickPunter_History_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        
+        # Send file
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+    
+    except Exception as e:
+        flash(f'Error generating PDF: {str(e)}', 'error')
+        return redirect(url_for('history'))
 
 
 @app.route('/api/save-bet', methods=['POST'])
