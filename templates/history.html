@@ -117,12 +117,10 @@ Stake: ${{ '%.2f'|format(bet.stake_total) }}
                             class="btn" style="padding: 6px 12px; font-size: 0.9em; margin-right: 5px;">
                         ✏️ Edit Race
                     </button>
-                    {% if bet.result_status == 'pending' %}
                     <button onclick="enterResults({{ bet.id }}, '{{ bet.horse_a.name }}', '{{ bet.horse_b.name }}', '{{ bet.horse_c.name }}')" 
                             class="btn" style="padding: 6px 12px; font-size: 0.9em; background: #28a745; margin-right: 5px;">
                         📝 Results
                     </button>
-                    {% endif %}
                     <button onclick="deleteBet({{ bet.id }})" 
                             class="btn delete-bet-btn" 
                             data-bet-id="{{ bet.id }}"
