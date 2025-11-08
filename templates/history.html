@@ -63,9 +63,9 @@
                     {% if bet.result_status == 'pending' %}
                     <em style="color: #999;">-</em>
                     {% else %}
-                    {% if bet.result_first %}<strong>1st:</strong> {{ bet.result_first }}<br>{% endif %}
-                    {% if bet.result_second %}<strong>2nd:</strong> {{ bet.result_second }}<br>{% endif %}
-                    {% if bet.result_third %}<strong>3rd:</strong> {{ bet.result_third }}{% endif %}
+                    {% if bet.result_first %}{{ bet.result_first }}<br>{% endif %}
+                    {% if bet.result_second %}{{ bet.result_second }}<br>{% endif %}
+                    {% if bet.result_third %}{{ bet.result_third }}{% endif %}
                     {% if not bet.result_first and not bet.result_second and not bet.result_third %}
                     <em style="color: #999;">Not entered</em>
                     {% endif %}
